@@ -49,4 +49,4 @@ docker-compose.override.yml
 *.cert
 
 # Project Specific
-deployment/
+deployment/deployment_guide.md
