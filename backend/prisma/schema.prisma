@@ -1,0 +1,59 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-1.1.x", "debian-openssl-3.0.x"]
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // hashed
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  hostedRooms   Room[]
+}
+
+model Room {
+  id            String      @id @default(cuid())
+  name          String?
+  hostId        String
+  host          User        @relation(fields: [hostId], references: [id])
+  status        RoomStatus  @default(ACTIVE)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  participants  Participant[]
+  
+  @@index([hostId])
+}
+
+model Participant {
+  id            String            @id @default(cuid())
+  roomId        String
+  room          Room              @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId        String?           // null for guests
+  name          String
+  role          ParticipantRole   @default(GUEST)
+  joinedAt      DateTime          @default(now())
+  leftAt        DateTime?
+  
+  @@index([roomId])
+}
+
+enum RoomStatus {
+  ACTIVE
+  ENDED
+}
+
+enum ParticipantRole {
+  HOST
+  GUEST
+}
