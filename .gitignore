@@ -12,6 +12,7 @@ node_modules/
 .env.production
 .env.development
 .env.test
+!.env.example
 
 # Next.js
 .next/
