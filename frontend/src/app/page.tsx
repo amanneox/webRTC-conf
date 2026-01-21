@@ -26,6 +26,8 @@ export default function DashboardPage() {
   const [newRoomName, setNewRoomName] = useState("")
   const [user, setUser] = useState<any>(null)
 
+  const [loading, setLoading] = useState(true)
+
   useEffect(() => {
     const token = localStorage.getItem("token")
     if (!token) {
@@ -34,6 +36,7 @@ export default function DashboardPage() {
     }
     setUser(JSON.parse(localStorage.getItem("user") || "{}"))
     fetchRooms()
+    setLoading(false)
   }, [])
 
   const fetchRooms = async () => {
@@ -74,6 +77,14 @@ export default function DashboardPage() {
     localStorage.removeItem("token")
     localStorage.removeItem("user")
     router.push("/login")
+  }
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    )
   }
 
   return (

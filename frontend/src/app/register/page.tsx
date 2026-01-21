@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,15 +32,7 @@ export default function RegisterPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            })
-
-            if (!res.ok) throw new Error("Registration failed")
-
-            const data = await res.json()
+            const data = await api.auth.register(values.name, values.email, values.password);
             localStorage.setItem("token", data.access_token)
             localStorage.setItem("user", JSON.stringify(data.user))
             router.push("/")
@@ -65,7 +58,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel className="text-white">Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="John Doe" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
+                                            <Input placeholder="Aman Adhikari" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -78,7 +71,7 @@ export default function RegisterPage() {
                                     <FormItem>
                                         <FormLabel className="text-white">Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="m@example.com" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
+                                            <Input placeholder="aman@example.com" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

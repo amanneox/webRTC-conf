@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
 import { useRouter } from "next/navigation"
+import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,15 +30,7 @@ export default function LoginPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
-            })
-
-            if (!res.ok) throw new Error("Login failed")
-
-            const data = await res.json()
+            const data = await api.auth.login(values.email, values.password);
             localStorage.setItem("token", data.access_token)
             localStorage.setItem("user", JSON.stringify(data.user))
             router.push("/")
@@ -63,7 +56,7 @@ export default function LoginPage() {
                                     <FormItem>
                                         <FormLabel className="text-white">Email</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="m@example.com" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
+                                            <Input placeholder="aman@example.com" {...field} className="bg-transparent border-white/20 text-white placeholder:text-muted-foreground/50 focus-visible:ring-primary/20 transition-all" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
