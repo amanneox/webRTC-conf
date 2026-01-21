@@ -33,6 +33,7 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
         if (!socket || !stream || !user) return;
 
         const handleUserJoined = async ({ userId, name }: { userId: string, name: string }) => {
+            toast.success(`${name || 'User'} joined the room`);
             if (pcsRef.current.has(userId)) return;
 
             const pc = createPeerConnection(

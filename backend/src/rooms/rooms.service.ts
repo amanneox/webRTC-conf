@@ -15,7 +15,10 @@ export class RoomsService {
 
   findAll() {
     return this.prisma.room.findMany({
-      include: { host: { select: { name: true, email: true } } },
+      include: {
+        host: { select: { name: true, email: true } },
+        _count: { select: { participants: true } }
+      },
     });
   }
 
@@ -43,7 +46,7 @@ export class RoomsService {
     const link = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/room/${roomId}`;
 
     const { data } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
       to: email,
       subject: `Join ${room.name}`,
       html: getInviteTemplate(room.name || 'Meeting', link),

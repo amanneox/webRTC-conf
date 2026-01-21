@@ -9,9 +9,57 @@ export const useMediaStream = () => {
     useEffect(() => {
         let mounted = true;
 
-        navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-            .then(s => mounted && setStream(s))
-            .catch(() => toast.error('Could not access camera/microphone'));
+        const tryGetMedia = async () => {
+            // Try full audio+video first
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                if (mounted) setStream(s);
+                return;
+            } catch (e: any) {
+                console.warn('Full media failed, trying video only...', e);
+                if (e.name === 'NotReadableError') {
+                    toast.warning('Camera or Mic is busy. Trying fallback...');
+                }
+            }
+
+            // Fallback: video only
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                if (mounted) {
+                    setStream(s);
+                    setIsAudioEnabled(false);
+                    toast.warning('Microphone not available, video only.');
+                }
+                return;
+            } catch (e: any) {
+                console.warn('Video only failed, trying audio only...', e);
+                if (e.name === 'NotReadableError') {
+                    // This means Video is likely the busy one if previous attempt failed too
+                }
+            }
+
+            // Fallback: audio only
+            try {
+                const s = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+                if (mounted) {
+                    setStream(s);
+                    setIsVideoEnabled(false);
+                    toast.warning('Camera not available, audio only.');
+                }
+                return;
+            } catch (e: any) {
+                console.error('All media access failed', e);
+                if (e.name === 'NotReadableError') {
+                    toast.error('Camera/Mic is being used by another app.');
+                } else if (e.name === 'NotAllowedError') {
+                    toast.error('Permission denied. Please allow access.');
+                } else {
+                    toast.error('Could not access camera/microphone.');
+                }
+            }
+        };
+
+        tryGetMedia();
 
         return () => {
             mounted = false;

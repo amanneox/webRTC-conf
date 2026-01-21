@@ -9,6 +9,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { RoomsService } from '../rooms/rooms.service';
+import { PrismaService } from '../database/prisma.service';
 
 @WebSocketGateway({
   cors: {
@@ -19,18 +20,23 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
   @WebSocketServer()
   server: Server;
 
-  constructor(private roomsService: RoomsService) { }
+  constructor(private roomsService: RoomsService, private prisma: PrismaService) { }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+    const participantId = client.data.participantId;
     const userId = client.data.userId;
     const roomId = client.data.roomId;
     if (userId && roomId) {
       this.server.to(roomId).emit('user-left', { userId });
+      // Remove participant from DB
+      if (participantId) {
+        await this.prisma.participant.delete({ where: { id: participantId } }).catch(() => { });
+      }
     }
   }
 
@@ -56,7 +62,7 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
   }
 
   @SubscribeMessage('ready')
-  handleReady(@ConnectedSocket() client: Socket) {
+  async handleReady(@ConnectedSocket() client: Socket) {
     const pending = this.pendingUsers.get(client.id);
     if (pending) {
       console.log(`Client ${pending.userId} is ready, sending existing users`);
@@ -78,6 +84,17 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
           client.emit('existing-users', existingUsers);
         }
       }
+
+      // Create participant record in DB
+      const participant = await this.prisma.participant.create({
+        data: {
+          roomId: pending.roomId,
+          userId: pending.userId,
+          name: pending.name,
+          role: 'GUEST',
+        },
+      });
+      pending.client.data.participantId = participant.id;
 
       this.pendingUsers.delete(client.id);
     }

@@ -17,6 +17,16 @@ export const useWebSocket = (roomId: string, user: any) => {
             sock.emit('join-room', { roomId, userId: user.id, name: user.name });
         });
 
+        sock.on('disconnect', (reason) => {
+            if (reason !== 'io client disconnect') {
+                toast.loading('Connection lost. Reconnecting...', { id: 'ws-status' });
+            }
+        });
+
+        sock.on('reconnect', () => {
+            toast.success('Reconnected!', { id: 'ws-status' });
+        });
+
         sock.on('connect_error', () => toast.error('Connection failed'));
 
         setSocket(sock);

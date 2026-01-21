@@ -37,7 +37,8 @@ export function InviteDialog({ roomId }: Props) {
                 setEmail("");
                 setOpen(false);
             } else {
-                toast.error("Failed to send");
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.message || "Failed to send invite");
             }
         } catch {
             toast.error("Something went wrong");
