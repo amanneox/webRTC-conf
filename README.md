@@ -48,7 +48,13 @@ The easiest way to run the application is using Docker Compose.
     docker-compose up -d --build
     ```
 
-4.  **Access the App:**
+4.  **Run Database Migrations:**
+    Once the containers are running, apply the database schema:
+    ```bash
+    docker compose exec backend npx prisma migrate deploy
+    ```
+
+5.  **Access the App:**
     - Frontend: `http://localhost:3000`
     - Backend API: `http://localhost:3001`
 
