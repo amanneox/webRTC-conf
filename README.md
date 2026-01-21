@@ -8,7 +8,6 @@ A modern, real-time video conferencing application built with Next.js, NestJS, a
 - **Instant Rooms**: Create rooms instantly as a host.
 - **Guest Access**: Join via link with a simple display name (no login required for guests).
 - **Real-time Media**: High-quality Audio/Video using WebRTC.
-- **Interactive UI**: Glassmorphic design, dynamic participant grid, and floating controls.
 
 ### Moderation (Host Only)
 - **Kick Participants**: Remove unwanted users.
@@ -16,7 +15,7 @@ A modern, real-time video conferencing application built with Next.js, NestJS, a
 - **End Session**: Delete the room for everyone.
 
 ### Tech Stack
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, shadcn/ui
+- **Frontend**: Next.js, TypeScript, Tailwind CSS, shadcn/ui
 - **Backend**: NestJS, Socket.io (Signaling), Prisma
 - **Database**: PostgreSQL
 - **Infrastructure**: Docker Compose, Redis (for queue/cache)
