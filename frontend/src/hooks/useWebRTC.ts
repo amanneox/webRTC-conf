@@ -11,6 +11,8 @@ interface Peer {
 
 export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null, socket: Socket | null) => {
     const [peers, setPeers] = useState<Peer[]>([]);
+    // Using refs for PCs to avoid re-renders during signaling. 
+    // State updates for every ICE candidate would kill performance.
     const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
 
     const addPeer = useCallback((userId: string, name: string, remoteStream: MediaStream) => {
@@ -34,6 +36,8 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
 
         const handleUserJoined = async ({ userId, name }: { userId: string, name: string }) => {
             toast.success(`${name || 'User'} joined the room`);
+
+            // Prevent duplicate connections if signaling is noisy
             if (pcsRef.current.has(userId)) return;
 
             const pc = createPeerConnection(
@@ -56,7 +60,9 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
             }
         };
 
-        const handleOffer = async ({ from, offer }: { from: string, offer: RTCSessionDescriptionInit }) => {
+        const handleOffer = async ({ from, name, offer }: { from: string, name?: string, offer: RTCSessionDescriptionInit }) => {
+            // Polite peer pattern: If we already have a connection, we might be in a glare. 
+            // Simplified here: just ignore duplicate offers for now.
             if (pcsRef.current.has(from)) {
                 return;
             }
@@ -66,9 +72,7 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
                 stream,
                 (candidate) => socket.emit('ice-candidate', { to: from, candidate }),
                 (remoteStream) => {
-                    // Try to guess name or use default
-                    const name = "Participant " + from.slice(0, 4);
-                    addPeer(from, name, remoteStream);
+                    addPeer(from, name || 'Participant', remoteStream);
                 }
             );
 
@@ -80,6 +84,7 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
                 await pc.setLocalDescription(answer);
                 socket.emit('answer', { to: from, answer });
             } catch (err) {
+                // Sdp checks failed?
                 console.error('Error handling offer:', err);
             }
         };
@@ -111,7 +116,6 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
             toast.info('User left the room');
         };
 
-        // Handle list of existing users (sent on join)
         const handleExistingUsers = async (users: { userId: string; name: string }[]) => {
             for (const { userId, name } of users) {
                 if (pcsRef.current.has(userId)) continue;
@@ -144,7 +148,7 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
         socket.on('user-left', handleUserLeft);
         socket.on('existing-users', handleExistingUsers);
 
-        // NOW that all listeners are attached, signal that we're ready
+        // Signal ready after listeners attached to avoid race conditions with 'existing-users'
         socket.emit('ready');
 
         return () => {
@@ -154,8 +158,6 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
             socket.off('ice-candidate', handleIceCandidate);
             socket.off('user-left', handleUserLeft);
             socket.off('existing-users', handleExistingUsers);
-            // We do NOT close PCs here on basic re-renders unless we want full reset
-            // But if socket changes (reconnect), we probably SHOULD reset.
             pcsRef.current.forEach(pc => pc.close());
             pcsRef.current.clear();
             setPeers([]);

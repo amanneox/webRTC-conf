@@ -10,8 +10,8 @@ import { toast } from "sonner"
 import { ParticipantsList } from "@/components/ParticipantsList"
 import { InviteDialog } from "@/components/InviteDialog"
 import { EndSessionDialog } from "@/components/EndSessionDialog"
+import { JoinRoomDialog } from "@/components/JoinRoomDialog"
 import { Users } from 'lucide-react';
-import { Button } from "@/components/ui/button"
 
 export default function RoomPage() {
     const { id } = useParams()
@@ -20,42 +20,32 @@ export default function RoomPage() {
     const [user, setUser] = useState<any>(null)
     const [roomName, setRoomName] = useState<string>("")
     const [isParticipantsOpen, setIsParticipantsOpen] = useState(false)
-
-    // Hooks
-    const { stream, isAudioEnabled, isVideoEnabled, toggleAudio, toggleVideo, muteTrack } = useMediaStream()
-    // socket is now a direct object (or null), not a ref
-    const socket = useWebSocket(roomId, user)
-    const { peers } = useWebRTC(roomId, user, stream, socket)
-
     const [isHost, setIsHost] = useState(false);
+    const [needsGuestName, setNeedsGuestName] = useState(false);
 
     useEffect(() => {
-        const initializeUser = async () => {
-            let currentUser: any = null;
-            const token = localStorage.getItem("token");
-            const storedUser = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
 
-            if (token && storedUser) {
-                currentUser = JSON.parse(storedUser);
-            } else {
-                // Generate Guest User
-                const randomId = Math.random().toString(36).substring(2, 9);
-                currentUser = {
-                    id: `guest-${randomId}`,
-                    name: `Guest ${randomId.substring(0, 4)}`,
-                    isGuest: true
-                };
-            }
-            setUser(currentUser);
+        if (token && storedUser) {
+            setUser(JSON.parse(storedUser));
+        } else {
+            setNeedsGuestName(true);
+        }
+    }, []);
 
-            // Fetch Room to check if Host
+    useEffect(() => {
+        if (!user || !roomId) return;
+
+        const fetchRoom = async () => {
             try {
                 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
                 const res = await fetch(`${API_URL}/rooms/${roomId}`);
                 if (res.ok) {
                     const room = await res.json();
                     setRoomName(room.name || "Room " + roomId);
-                    if (room.hostId === currentUser.id) {
+
+                    if (room.hostId === user.id) {
                         setIsHost(true);
                         toast.success("You are the host of this room");
                     }
@@ -65,10 +55,69 @@ export default function RoomPage() {
             }
         };
 
-        if (roomId) initializeUser();
-    }, [roomId]);
+        fetchRoom();
+    }, [user, roomId]);
 
-    // Handle Moderation Events
+    const handleGuestJoin = (name: string) => {
+        const randomId = Math.random().toString(36).substring(2, 9);
+        const guestUser = {
+            id: `guest-${randomId}`,
+            name: name,
+            isGuest: true
+        };
+        setUser(guestUser);
+        setNeedsGuestName(false);
+    };
+
+
+    if (needsGuestName) {
+        return (
+            <div className="h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background">
+                <JoinRoomDialog onJoin={handleGuestJoin} />
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="h-screen flex items-center justify-center bg-background text-muted-foreground animate-pulse">
+                Loading...
+            </div>
+        );
+    }
+
+    return <RoomContent
+        roomId={roomId}
+        roomName={roomName}
+        user={user}
+        isHost={isHost}
+        isParticipantsOpen={isParticipantsOpen}
+        setIsParticipantsOpen={setIsParticipantsOpen}
+        router={router}
+    />;
+}
+
+function RoomContent({
+    roomId,
+    roomName,
+    user,
+    isHost,
+    isParticipantsOpen,
+    setIsParticipantsOpen,
+    router
+}: {
+    roomId: string;
+    roomName: string;
+    user: any;
+    isHost: boolean;
+    isParticipantsOpen: boolean;
+    setIsParticipantsOpen: (v: boolean) => void;
+    router: any;
+}) {
+    const { stream, isAudioEnabled, isVideoEnabled, toggleAudio, toggleVideo, muteTrack } = useMediaStream()
+    const socket = useWebSocket(roomId, user)
+    const { peers } = useWebRTC(roomId, user, stream, socket)
+
     useEffect(() => {
         if (!socket) return;
 
@@ -101,7 +150,7 @@ export default function RoomPage() {
         if (!socket || !user) return;
         socket.emit('kick-participant', {
             roomId,
-            targetUserId: targetUserId, // Ensure this matches what VideoGrid passes (logical ID)
+            targetUserId,
             issuerId: user.id
         });
         toast.success("User kicked");
@@ -118,27 +167,16 @@ export default function RoomPage() {
         toast.success(`User ${kind} disabled`);
     };
 
-    // Construct participants list
-    const allParticipants = user ? [
-        { userId: user.id || 'me', name: `${user.name} (You)`, isHost: isHost },
-        ...peers
-    ] : [];
-
-    if (!user) return <div className="h-screen flex items-center justify-center bg-gray-50 text-gray-600 animate-pulse">Loading workspace...</div>
-
     const handleDeleteRoom = async () => {
         try {
             const token = localStorage.getItem("token");
             const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
             const res = await fetch(`${API_URL}/rooms/${roomId}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (res.ok) {
-                // Notify others via socket
                 socket?.emit('room-deleted', { roomId, issuerId: user.id });
                 toast.success("Room deleted");
                 router.push('/');
@@ -151,9 +189,13 @@ export default function RoomPage() {
         }
     };
 
+    const allParticipants = [
+        { userId: user.id || 'me', name: `${user.name} (You)`, isHost: isHost },
+        ...peers
+    ];
+
     return (
         <div className="h-screen bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background text-foreground flex flex-col font-sans overflow-hidden">
-            {/* Header - Glassmorphic & Immersive */}
             <header className="px-6 py-4 absolute top-0 left-0 right-0 z-50 flex justify-between items-center bg-gradient-to-b from-background/90 to-transparent pt-6 pb-12 pointer-events-none">
                 <div className="flex items-center gap-4 pointer-events-auto">
                     <div>
@@ -184,12 +226,8 @@ export default function RoomPage() {
                 onClose={() => setIsParticipantsOpen(false)}
             />
 
-            {/* Main Content Layout */}
             <div className="flex flex-1 overflow-hidden relative pt-20">
-
-                {/* Visual Content Area */}
                 <main className="flex-1 flex flex-col relative w-full h-full p-6">
-                    {/* Video Grid Container */}
                     <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar rounded-lg bg-black/20 border border-white/5 backdrop-blur-sm p-4 shadow-inner">
                         <VideoGrid
                             localStream={stream}
@@ -203,20 +241,17 @@ export default function RoomPage() {
                         />
                     </div>
 
-                    {/* Floating Controls Bar */}
                     <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
                         <MediaControls
                             isAudioEnabled={isAudioEnabled}
                             isVideoEnabled={isVideoEnabled}
                             toggleAudio={toggleAudio}
                             toggleVideo={toggleVideo}
-                            leaveRoom={() => {
-                                router.push('/');
-                            }}
+                            leaveRoom={() => router.push('/')}
                         />
                     </div>
                 </main>
             </div>
         </div>
-    )
+    );
 }

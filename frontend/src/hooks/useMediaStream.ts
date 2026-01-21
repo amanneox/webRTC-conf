@@ -10,7 +10,6 @@ export const useMediaStream = () => {
         let mounted = true;
 
         const tryGetMedia = async () => {
-            // Try full audio+video first
             try {
                 const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 if (mounted) setStream(s);
@@ -22,7 +21,6 @@ export const useMediaStream = () => {
                 }
             }
 
-            // Fallback: video only
             try {
                 const s = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
                 if (mounted) {
@@ -34,11 +32,9 @@ export const useMediaStream = () => {
             } catch (e: any) {
                 console.warn('Video only failed, trying audio only...', e);
                 if (e.name === 'NotReadableError') {
-                    // This means Video is likely the busy one if previous attempt failed too
                 }
             }
 
-            // Fallback: audio only
             try {
                 const s = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
                 if (mounted) {

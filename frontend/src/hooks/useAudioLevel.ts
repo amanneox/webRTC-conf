@@ -28,15 +28,11 @@ export const useAudioLevel = (stream: MediaStream | null) => {
                 if (!analyserRef.current) return;
 
                 analyserRef.current.getByteFrequencyData(dataArray);
-
-                // Calculate average volume
                 let sum = 0;
                 for (let i = 0; i < bufferLength; i++) {
                     sum += dataArray[i];
                 }
                 const average = sum / bufferLength;
-
-                // Normalize to 0-100 range with some sensitivity adjustment
                 const normalizedLevel = Math.min(100, Math.max(0, average * 2.5));
                 setAudioLevel(normalizedLevel);
 
