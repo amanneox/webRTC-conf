@@ -28,6 +28,7 @@ COPY --from=builder /app/package.json ./package.json
 
 # Copy prisma schema if needed for runtime (though client is compiled)
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 3001
 
