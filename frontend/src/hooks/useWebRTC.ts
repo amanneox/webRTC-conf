@@ -61,8 +61,7 @@ export const useWebRTC = (roomId: string, user: any, stream: MediaStream | null,
         };
 
         const handleOffer = async ({ from, name, offer }: { from: string, name?: string, offer: RTCSessionDescriptionInit }) => {
-            // Polite peer pattern: If we already have a connection, we might be in a glare. 
-            // Simplified here: just ignore duplicate offers for now.
+            // Already connected to this peer, ignore duplicate offer
             if (pcsRef.current.has(from)) {
                 return;
             }
