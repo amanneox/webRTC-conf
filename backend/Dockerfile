@@ -2,10 +2,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json ./
+# Copy package files and config for build
+COPY package.json package-lock.json ./
+COPY nest-cli.json tsconfig.json tsconfig.build.json ./
 
-# Install dependencies (generating package-lock.json)
-RUN npm install
+# Install dependencies
+RUN npm ci
 
 COPY . .
 
