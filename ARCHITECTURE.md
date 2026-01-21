@@ -25,6 +25,20 @@ Mesh doesn't scale.
 *   **Limit**: Works great for <6 users. Beyond that, client CPU/bandwidth become bottlenecks.
 *   **My Mitigation**: For this project's scope (small meetings), Mesh is correct. If scaling to 20+ users, an SFU layer could be added *without* rewriting the signaling logic.
 
+### Why STUN Only (No TURN)
+
+WebRTC needs to discover the public IP of each peer to establish a direct connection. There are two types of servers for this:
+
+| Server | Purpose | Cost |
+|--------|---------|------|
+| **STUN** | Tells a client "your public IP is X". That's it. Lightweight. | Free (Google provides public ones) |
+| **TURN** | Relays media when direct connection fails (strict firewalls). | Expensive (you pay for bandwidth) |
+
+**My Decision**: I'm using only STUN (Google's free `stun.l.google.com`).
+
+*   **Why no TURN?**: TURN relays *all* media through your server if P2P fails. This defeats the "zero bandwidth cost" benefit of Mesh and adds infrastructure complexity.
+*   **Trade-off**: ~10-15% of users behind very strict corporate firewalls may fail to connect. For a demo/assignment, this is acceptable. In production, you'd add a TURN fallback (e.g., Twilio or self-hosted Coturn).
+
 ---
 
 ## 2. Technology Stack
