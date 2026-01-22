@@ -1,9 +1,8 @@
-import React from 'react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { Users, Mic, MicOff, Video, VideoOff, Crown } from 'lucide-react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { Users, Mic, Video, Crown } from 'lucide-react';
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
+
 
 interface Participant {
     userId: string;
@@ -55,7 +54,6 @@ export const ParticipantsList = ({ participants, isOpen, onClose }: Participants
                                     </div>
                                 </div>
                                 <div className="flex gap-2 text-muted-foreground">
-                                    {/* These could be real states if passed down */}
                                     <Mic className="h-4 w-4" />
                                     <Video className="h-4 w-4" />
                                 </div>

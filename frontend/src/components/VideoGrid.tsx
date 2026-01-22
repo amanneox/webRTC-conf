@@ -1,6 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Mic, MicOff, Video, VideoOff, UserX } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { MicOff, VideoOff, UserX } from 'lucide-react';
 import { Button } from './ui/button';
 import { useAudioLevel } from '@/hooks/useAudioLevel';
 
