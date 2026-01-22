@@ -16,7 +16,6 @@ interface VideoGridProps {
 }
 
 const AudioVisualizer = ({ level }: { level: number }) => {
-    // 3 bars with different height thresholds
     return (
         <div className="flex items-end gap-0.5 h-3">
             <div
@@ -73,13 +72,11 @@ const VideoPlayer = ({
             />
             <div className="absolute bottom-3 left-3 flex items-center gap-2">
                 <div className="bg-black/30 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-md text-white text-xs font-medium flex items-center gap-2.5">
-                    {/* Audio Visualizer */}
                     <AudioVisualizer level={audioLevel} />
                     {name || "User"}
                 </div>
             </div>
 
-            {/* Host Controls Overlay */}
             {isHost && userId && (
                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                     <Button
@@ -126,8 +123,6 @@ export const VideoGrid = ({
     onMute
 }: VideoGridProps) => {
     const totalParticipants = (localStream ? 1 : 0) + peers.length;
-
-    // Dynamic grid based on participant count (1-4-9-16 layout)
     const getGridClass = () => {
         if (totalParticipants === 1) return "grid-cols-1 max-w-4xl";
         if (totalParticipants <= 4) return "grid-cols-2 max-w-6xl";
@@ -138,12 +133,10 @@ export const VideoGrid = ({
 
     return (
         <div className={`grid ${getGridClass()} gap-4 w-full h-full p-4 place-content-center mx-auto transition-all duration-500`}>
-            {/* Local Video */}
             {localStream && (
                 <VideoPlayer stream={localStream} muted={true} name={`${localUser.name} (You)`} />
             )}
 
-            {/* Remote Videos */}
             {peers.map((peer) => (
                 <VideoPlayer
                     key={peer.userId}
